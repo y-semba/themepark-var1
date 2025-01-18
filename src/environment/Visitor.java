@@ -31,6 +31,7 @@ public class Visitor implements Cloneable {
 	private int travelTime = 0;
 	private int remainingTime;
 	private int entryTime = 0;
+	private int newEntryTime = 0;
 
 	/** 選好値と効用(LinkedHashMapは効用と選好のindexを保持するため) */
 	private Map<String, Double> preferences = new LinkedHashMap<>();
@@ -57,57 +58,78 @@ public class Visitor implements Cloneable {
 	public boolean getIsEntered() {
 		return isEntered;
 	}
+
 	public int getPosition() {
 		return position;
 	}
+
 	public int getId() {
 		return visitorId;
 	}
+
 	public EnumStatus getActStatus() {
 		return actStatus;
 	}
+
 	public int[] getWaitingTimes() {
 		return waitingTimes;
 	}
+
 	public int getMaxWTime() {
 		return maxWTime;
 	}
+
 	public int getMinWTime() {
 		return minWTime;
 	}
+
 	public int getwaitingTime() {
 		return waitingTime;
 	}
+
 	public int getMovingTime() {
 		return movingTime;
 	}
+
 	public int getTravelTime() {
 		return travelTime;
 	}
+
 	public int getRemainigTime() {
 		return remainingTime;
 	}
+
 	public int getEntryTime() {
 		return entryTime;
 	}
-	public LinkedHashMap<String, Double> getPreferences(){
+
+	public LinkedHashMap<String, Double> getPreferences() {
 		return (LinkedHashMap<String, Double>) preferences;
 	}
+
 	public double getUtility() {
 		return utility;
 	}
+
 	public List<Integer> getAttractionToVisit() {
 		return attractionToVisit;
 	}
-	public List<Integer> getPlan(){
+
+	public List<Integer> getPlan() {
 		return plan;
 	}
+
+	public int getNewEntryTime() {
+		return newEntryTime;
+	}
+
 	/** ~~~ getter メソッド */
 
 	/** PWSCEでコスト推定する際に、プランの組をclonedVisitorに設定する */
 	public void setPlan(List<Integer> plan) {
 		this.plan = plan;
 	}
+
 	public void setEntryTime(int time) {
 		this.entryTime = time;
 	}
@@ -116,13 +138,14 @@ public class Visitor implements Cloneable {
 	 * act()で呼び出すprivate関数
 	 * プランが示す次ノードにpositionを移動し、移動前のノードをプランから除く。
 	 * 移動先アトラクションの場合はリストから消す
+	 * 
 	 * @param tp ThemeParkのインスタンス
 	 * @return 移動先のThemeParkNode
 	 */
 	private ThemeParkNode move(ThemePark tp) {
 		position = plan.get(1);
-		if (attractionToVisit.contains((Integer)position)) {
-			attractionToVisit.remove((Integer)position);
+		if (attractionToVisit.contains((Integer) position)) {
+			attractionToVisit.remove((Integer) position);
 		}
 		plan.remove(0);
 		return tp.getNodeAt(position);
@@ -135,13 +158,16 @@ public class Visitor implements Cloneable {
 		int wSum = waitingTimes[0];
 		// 累計時間[i]から[i-1]までの累計待ち時間をひく
 		for (int i = 1; i < SystemConst.NUM_ATT_TO_VISIT; i++) {
-			if (waitingTimes[i] == 0) continue;
+			if (waitingTimes[i] == 0)
+				continue;
 			waitingTimes[i] = waitingTimes[i] - wSum;
 			wSum += waitingTimes[i];
 		}
 		for (int i = 0; i < waitingTimes.length; i++) {
-			if (waitingTimes[i] > maxWTime) maxWTime = waitingTimes[i];
-			if (waitingTimes[i] < minWTime) minWTime = waitingTimes[i];
+			if (waitingTimes[i] > maxWTime)
+				maxWTime = waitingTimes[i];
+			if (waitingTimes[i] < minWTime)
+				minWTime = waitingTimes[i];
 		}
 	}
 
@@ -150,7 +176,8 @@ public class Visitor implements Cloneable {
 	 * TODO Deviceにutilityをact()で定義して委譲した方が綺麗
 	 * u_j = u_jk * p_jk
 	 * preferencesは順番を保持するためにLinkedHashMapの必要がある
-	 * @return　個人効用u_j
+	 * 
+	 * @return 個人効用u_j
 	 */
 	public double calcUtility() {
 		// indexの順番を変える場合はpreferencesの並びも変える必要がある
@@ -178,68 +205,68 @@ public class Visitor implements Cloneable {
 	 */
 	public void act(ThemePark tp) {
 		ThemeParkNode currentNode = tp.getNodeAt(position);
-		switch(actStatus) {
-		case INACTIVE:
-			// 入口に出現したらスタート
-			if (position == SystemConst.ENTRANCE) {
-				startTime = tp.getSimTime();
-				// 次ノードへ移動して前ノードを除く
-				currentNode = move(tp);
-				if (currentNode.hasEmpty()) {
-					actStatus = EnumStatus.SERVED;
-					remainingTime = currentNode.getServiceTime();
-				} else {
-					// 今回の設定では入口の隣接ノードはRoadノードなので起こり得ない
-					//TODO アトラクションがありえるなら待ち行列に登録する
-					System.exit(2);
-				}
-			}
-			break;
-
-		case WAITING:
-			waitingTime++;
-			if (currentNode.canServe(getId())) {
-				int wIndex = waitingTimes.length - attractionToVisit.size() - 1;
-				waitingTimes[wIndex] = waitingTime;
-
-				actStatus = EnumStatus.SERVED;
-				remainingTime = currentNode.getServiceTime();
-			}
-			break;
-
-		case SERVED:
-			remainingTime--;
-			if (remainingTime == 0) {
-				//TODO アトラクションの処理を別でやって更新した方がいいかも？間違ってたとしても1stepしかずれないから多分誤差
-				currentNode.finishService();
-				if (currentNode.getCapacity() == Integer.MAX_VALUE) {
-					movingTime += currentNode.getServiceTime();
-				}
-				currentNode = move(tp);
-				if (position == SystemConst.EXIT) {
-					endTime = tp.getSimTime();
-					travelTime = endTime - startTime;
-					calcWaitingTimes();
-					utility = calcUtility();
-					actStatus = EnumStatus.TERMINATED;
-					// System.out.println("VisitorID [" + visitorId + "] が退場");
-					exit(tp);
-				} else {
-					// Roadノードorアトラクション待ち行列なし
+		switch (actStatus) {
+			case INACTIVE:
+				// 入口に出現したらスタート
+				if (position == SystemConst.ENTRANCE) {
+					startTime = tp.getSimTime();
+					// 次ノードへ移動して前ノードを除く
+					currentNode = move(tp);
 					if (currentNode.hasEmpty()) {
 						actStatus = EnumStatus.SERVED;
 						remainingTime = currentNode.getServiceTime();
 					} else {
-						// アトラクションノード待ち行列あり
-						((Attraction) currentNode).registerQueue(getId());
-						actStatus = EnumStatus.WAITING;
+						// 今回の設定では入口の隣接ノードはRoadノードなので起こり得ない
+						// TODO アトラクションがありえるなら待ち行列に登録する
+						System.exit(2);
 					}
 				}
-			}
-			break;
+				break;
 
-		case TERMINATED:
-			break;
+			case WAITING:
+				waitingTime++;
+				if (currentNode.canServe(getId())) {
+					int wIndex = waitingTimes.length - attractionToVisit.size() - 1;
+					waitingTimes[wIndex] = waitingTime;
+
+					actStatus = EnumStatus.SERVED;
+					remainingTime = currentNode.getServiceTime();
+				}
+				break;
+
+			case SERVED:
+				remainingTime--;
+				if (remainingTime == 0) {
+					// TODO アトラクションの処理を別でやって更新した方がいいかも？間違ってたとしても1stepしかずれないから多分誤差
+					currentNode.finishService();
+					if (currentNode.getCapacity() == Integer.MAX_VALUE) {
+						movingTime += currentNode.getServiceTime();
+					}
+					currentNode = move(tp);
+					if (position == SystemConst.EXIT) {
+						endTime = tp.getSimTime();
+						travelTime = endTime - startTime;
+						calcWaitingTimes();
+						utility = calcUtility();
+						actStatus = EnumStatus.TERMINATED;
+						// System.out.println("VisitorID [" + visitorId + "] が退場");
+						exit(tp);
+					} else {
+						// Roadノードorアトラクション待ち行列なし
+						if (currentNode.hasEmpty()) {
+							actStatus = EnumStatus.SERVED;
+							remainingTime = currentNode.getServiceTime();
+						} else {
+							// アトラクションノード待ち行列あり
+							((Attraction) currentNode).registerQueue(getId());
+							actStatus = EnumStatus.WAITING;
+						}
+					}
+				}
+				break;
+
+			case TERMINATED:
+				break;
 		}
 	}
 
@@ -248,19 +275,19 @@ public class Visitor implements Cloneable {
 	 * 分布に従って入場
 	 *
 	 * initVisitor()入場時に実行
-	 * */
-	public void enter() {
+	 */
+	public void enter(ThemePark tp) {
 		isEntered = true;
-		if (visitorId == SystemConst.MAX_USER /2) {
+		newEntryTime = tp.getSimTime();
+		if (visitorId == SystemConst.MAX_USER / 2) {
 			System.out.println("VisitorID [" + visitorId + "] が入場");
 		} else if (visitorId == SystemConst.MAX_USER - 1) {
 			System.out.println("VisitorID [" + visitorId + "] が入場");
 		}
-		// System.out.println("VisitorID [" + visitorId + "] が入場");
 	}
 
 	public void exit(ThemePark tp) {
-		if (visitorId == SystemConst.MAX_USER /2) {
+		if (visitorId == SystemConst.MAX_USER / 2) {
 			System.out.println("VisitorID [" + visitorId + "] が退場");
 		} else if (visitorId == SystemConst.MAX_USER - 1) {
 			System.out.println("VisitorID [" + visitorId + "] が退場");
@@ -282,7 +309,7 @@ public class Visitor implements Cloneable {
 
 	/**
 	 * @TODO: 選好値の偏りを設定ファイルに移動
-	 * 設定ファイルで設定した効用関数に対応した選好値を総和１の乱数で生成する.初期化で呼び出す.
+	 *        設定ファイルで設定した効用関数に対応した選好値を総和１の乱数で生成する.初期化で呼び出す.
 	 * @return 効用関数名に対応したMap
 	 */
 	private LinkedHashMap<String, Double> setPreferences() {
@@ -309,7 +336,7 @@ public class Visitor implements Cloneable {
 			preferences.put(key, dVal[i]);
 			i++;
 		}
-		//ここから特別実験のために変更してる~~~~
+		// ここから特別実験のために変更してる~~~~
 		// (1:9)->(0.2,1.8)のようにする．総和が一定になるように用いる効用数を比にかけること
 		double raito = 0.5;
 		double wt = preferences.get("WT");
@@ -327,10 +354,11 @@ public class Visitor implements Cloneable {
 		// 結果をpreferencesに再度設定
 		preferences.put("WT", wt);
 		preferences.put("MT", mt);
-		//~~~~~~~~ここまで
-		
+		// ~~~~~~~~ここまで
+
 		return (LinkedHashMap<String, Double>) preferences;
 	}
+
 	/**
 	 * enter()で呼び出す
 	 * strategyの切り替えと初期ノードなどの決定
@@ -376,7 +404,8 @@ public class Visitor implements Cloneable {
 	public void planSearch(ThemePark tp) {
 		switch (SystemConst.METHOD) {
 			case WPSCE:
-				if (actStatus == EnumStatus.TERMINATED) return;
+				if (actStatus == EnumStatus.TERMINATED)
+					return;
 				// 入口にいる場合は未入場なので一定間隔で実行
 				if (position == SystemConst.ENTRANCE) {
 					if (tp.getSimTime() % SystemConst.VISITOR_PLANNING_INTERVAL == 0) {
@@ -391,8 +420,10 @@ public class Visitor implements Cloneable {
 				break;
 
 			default:
-				if (actStatus == EnumStatus.TERMINATED) return;
-				if (position == SystemConst.ENTRANCE || (tp.getSimTime() - startTime) % SystemConst.VISITOR_PLANNING_INTERVAL == 0) {
+				if (actStatus == EnumStatus.TERMINATED)
+					return;
+				if (position == SystemConst.ENTRANCE
+						|| (tp.getSimTime() - startTime) % SystemConst.VISITOR_PLANNING_INTERVAL == 0) {
 					plan = device.searchPlan(tp, this);
 				}
 				break;
@@ -404,7 +435,8 @@ public class Visitor implements Cloneable {
 	 * 未入場のユーザは実行しない(statementも送信されない（正常))
 	 */
 	public void receivePlan(ThemePark tp) {
-		if (actStatus == EnumStatus.TERMINATED) return;
+		if (actStatus == EnumStatus.TERMINATED)
+			return;
 		// 入場時とINTERVALで実行するように変更
 		// 呼び出されるまで新statementは送信できない
 
@@ -417,8 +449,8 @@ public class Visitor implements Cloneable {
 	public Visitor clone() {
 		Visitor visitor = null;
 		try {
-			visitor = (Visitor)super.clone();
-			//visitor.device = this.device.clone();
+			visitor = (Visitor) super.clone();
+			// visitor.device = this.device.clone();
 			visitor.waitingTimes = this.waitingTimes.clone();
 			visitor.preferences = new LinkedHashMap<>(this.preferences);
 			visitor.attractionToVisit = new ArrayList<>(this.attractionToVisit);
