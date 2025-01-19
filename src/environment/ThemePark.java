@@ -246,10 +246,10 @@ public class ThemePark implements Cloneable {
 			// ポアソン分布に基づいてエントリータイムを設定
 			for (int j = 0; j < SystemConst.POISSON_DIS.length; j++) {
 				if (entval < SystemConst.POISSON_DIS[j]) {
-					visitors.get(i).setEntryTime(time);
-					i++; // 次の訪問者に進む
 					break; // 条件が満たされたら次の訪問者の処理へ
 				}
+				visitors.get(i).setEntryTime(time);
+				i++; // 次の訪問者に進む
 			}
 
 			time += 1; // 時間を進める
