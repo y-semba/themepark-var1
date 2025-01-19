@@ -37,7 +37,7 @@ public class ThemePark implements Cloneable {
 			if (entval < SystemConst.POISSON_DIS[i]) {
 				break;
 			}
-			visitors.get(entryCount).enter();
+			visitors.get(entryCount).enter(this);
 			entryCount++;
 		}
 	}
@@ -51,7 +51,7 @@ public class ThemePark implements Cloneable {
 			if (entval < SystemConst.POISSON_DIS[i]) {
 				break;
 			}
-			visitors.get(entryCount).enter();
+			visitors.get(entryCount).enter(this);
 			entryCount++;
 		}
 	}

@@ -13,7 +13,7 @@ public class VisitorsObserver implements Observer {
 	private Date date;
 	private String filename;
 	private PrintWriter writer;
-	
+
 	public VisitorsObserver() {
 		date = new Date();
 		String title = SystemConst.METHOD + "-" + SystemConst.MAX_USER + "_" + "SEED(" + SystemConst.SIM_SEED + ")";
@@ -26,34 +26,37 @@ public class VisitorsObserver implements Observer {
 		makeTitle(date, title);
 		makeHeadline();
 	}
-	
+
 	@Override
 	public void update(ThemePark tp) {
 	}
-	
+
 	@Override
 	public void end(ThemePark tp) {
 		makeItems(tp);
 		close();
 	}
+
 	/**
 	 * 1,2行目に記載
+	 * 
 	 * @param title ファイルのタイトル
-	 * @param date ファイル作成日時
+	 * @param date  ファイル作成日時
 	 */
 	private void makeTitle(Date date, String title) {
 		writer.println(date);
 		writer.println(title);
 	}
+
 	/** csvファイルの先頭行を作成. Visitorのフィールド */
 	private void makeHeadline() {
 		writer.print("VisitorId,");
-		for(int i = 0; i < SystemConst.NUM_ATT_TO_VISIT; i++) {
+		for (int i = 0; i < SystemConst.NUM_ATT_TO_VISIT; i++) {
 			writer.print("waitingTime[" + i + "],");
 		}
 		writer.print("maxWTime,");
 		writer.print("minWTime,");
-		writer.print("sumWaitingTime,");	
+		writer.print("sumWaitingTime,");
 		writer.print("movingTime,");
 		writer.print("travelTime,");
 		writer.print("preference[0](WT),");
@@ -62,10 +65,14 @@ public class VisitorsObserver implements Observer {
 		writer.print("preference[3](smooth),");
 		writer.print("preference[4](bias),");
 		writer.print("utility,");
+		writer.print("entryTime");
+		writer.print("newEntryTime");
 		writer.print("\n");
 	}
+
 	/**
 	 * sim()終了後に全visitorの情報を記録
+	 * 
 	 * @param tp 観測対象のテーマパークインスタンス
 	 */
 	private void makeItems(ThemePark tp) {
@@ -78,10 +85,12 @@ public class VisitorsObserver implements Observer {
 			int sumWTime = visitor.getwaitingTime();
 			int mTime = visitor.getMovingTime();
 			int tTime = visitor.getTravelTime();
+			int entryTime = visitor.getEntryTime();
+			int newEntryTime = visitor.getNewEntryTime();
 			Map<String, Double> preferences = visitor.getPreferences();
 			double utility = visitor.getUtility();
 			writer.print(visitorId + ",");
-			for(int wTime : wTimes) {
+			for (int wTime : wTimes) {
 				writer.print(wTime + ",");
 			}
 			writer.print(maxWTime + ",");
@@ -93,9 +102,12 @@ public class VisitorsObserver implements Observer {
 				writer.print(preferences.get(key) + ",");
 			}
 			writer.print(utility + ",");
+			writer.print(entryTime + ",");
+			writer.print(newEntryTime + ",");
 			writer.print("\n");
 		}
 	}
+
 	/** ファイルの終了処理 */
 	private void close() {
 		writer.close();
